@@ -1,0 +1,7 @@
+{
+  "streamUrl": "https://genart.social/api/v1/streaming/hashtag?tag=penplotter",
+  "defaultAcctInstance": "@genart.social",
+  "discordWebhookId": 1234123412341234,
+  "discordWebhookToken": "***token***",
+  "hearbeatUrl": "https://heartbeat.uptimerobot.com/***token***"
+}
