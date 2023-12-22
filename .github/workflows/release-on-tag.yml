@@ -20,34 +20,25 @@ jobs:
         go-version: 1.19.3
 
     - name: Build
-      run: go build -o bin/plotbot
+      run: ./build.sh
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+    - name: Build Docker image
+      run: docker build --platform=linux/amd64 -t plotbot .
+
+    - name: Push Docker image to Amazon ECR
+      id: ecr
+      uses: jwalton/gh-ecr-push@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
+        access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        region: eu-central-1
+        local-image: plotbot
+        image: plotbot
 
-    - name: Upload Release Asset
-      id: upload_release_asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: ./bin/plotbot
-        asset_name: plotbot
-        asset_content_type: application/octet-stream
-
-    - name: Invoke deployment hook
-      uses: distributhor/workflow-webhook@v1
-      env:
-        webhook_url: ${{ secrets.WEBHOOK_URL }}
-        webhook_secret: ${{ secrets.WEBHOOK_SECRET }}
-        data: '{ "artifact_url": "${{ steps.upload_release_asset.outputs.browser_download_url }}", "secret": "${{ secrets.WEBHOOK_SECRET }}"  }'
+#    - name: Invoke deployment hook
+#      uses: distributhor/workflow-webhook@v1
+#      env:
+#        webhook_url: ${{ secrets.WEBHOOK_URL }}
+#        webhook_secret: ${{ secrets.WEBHOOK_SECRET }}
+#        data: '{ "artifact_url": "${{ steps.upload_release_asset.outputs.browser_download_url }}", "secret": "${{ secrets.WEBHOOK_SECRET }}"  }'
        
