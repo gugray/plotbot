@@ -73,18 +73,18 @@ func heartbeat(url string, freqSec int) {
 	}
 }
 
-func readStreamWithRetry(address string, msgs chan<- string) {
+func readStreamWithRetry(address, token string, msgs chan<- string) {
 
 	for {
 		log.Printf("Connecting to stream: %v", address)
-		readStream(address, msgs)
+		readStream(address, token, msgs)
 		readingStream = false
 		log.Printf("Disconnected from stream. Waiting %v seconds before reconnecting.", streamReconnectSec)
 		time.Sleep(streamReconnectSec * time.Second)
 	}
 }
 
-func readStream(address string, msgs chan<- string) {
+func readStream(address, token string, msgs chan<- string) {
 
 	req, err := http.NewRequest("GET", address, nil)
 	if err != nil {
@@ -92,6 +92,7 @@ func readStream(address string, msgs chan<- string) {
 		return
 	}
 
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Connection", "keep-alive")
@@ -189,7 +190,7 @@ func main() {
 	updates := make(chan string, 2)
 
 	go heartbeat(cfg.HearbeatUrl, heartbeatSec)
-	go readStreamWithRetry(cfg.StreamUrl, msgs)
+	go readStreamWithRetry(cfg.StreamUrl, cfg.MastodonAccessToken, msgs)
 	go handleMsgs(msgs, updates)
 	go relayUpdates(updates, cfg.DiscordWebhookId, cfg.DiscordWebhookToken, cfg.DefaultAcctInstance)
 
